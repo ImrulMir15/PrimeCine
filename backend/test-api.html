@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrimeCine API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 { color: #a855f7; }
+        .test-section {
+            background: #16213e;
+            border: 1px solid #a855f7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        button {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .loading {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎬 PrimeCine API Test Dashboard</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="testAllEndpoints()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = message;
+            resultsDiv.appendChild(p);
+        }
+
+        function logJSON(title, data) {
+            const section = document.createElement('div');
+            section.innerHTML = `<h4 class="info">${title}</h4><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            resultsDiv.appendChild(section);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testAllEndpoints() {
+            clearResults();
+            log('🧪 Starting API Tests...', 'loading');
+
+            try {
+                // Test 1: Get all movies
+                log('\n1️⃣ Testing GET /api/movies', 'info');
+                const moviesResponse = await fetch(`${API_URL}/movies`);
+                const moviesData = await moviesResponse.json();
+                const movies = moviesData.data || moviesData;
+                
+                if (movies && movies.length > 0) {
+                    log(`✅ Found ${movies.length} movies`, 'success');
+                    logJSON('Sample Movie', movies[0]);
+
+                    const firstMovie = movies[0];
+
+                    // Test 2: Get movie by ID
+                    log('\n2️⃣ Testing GET /api/movies/:id', 'info');
+                    const movieResponse = await fetch(`${API_URL}/movies/${firstMovie._id}`);
+                    const movieData = await movieResponse.json();
+                    const movie = movieData.data || movieData;
+                    log(`✅ Movie details retrieved: ${movie.title}`, 'success');
+
+                    // Test 3: Get showtimes for movie
+                    log('\n3️⃣ Testing GET /api/showtimes/movie/:movieId', 'info');
+                    const showtimesResponse = await fetch(`${API_URL}/showtimes/movie/${firstMovie._id}`);
+                    const showtimesData = await showtimesResponse.json();
+                    const showtimes = showtimesData.data || showtimesData;
+                    
+                    if (showtimes && showtimes.length > 0) {
+                        log(`✅ Found ${showtimes.length} showtimes`, 'success');
+                        logJSON('Sample Showtime', showtimes[0]);
+
+                        const firstShowtime = showtimes[0];
+                        log(`   - Date: ${new Date(firstShowtime.date).toLocaleDateString()}`, 'info');
+                        log(`   - Time: ${firstShowtime.startTime}`, 'info');
+                        log(`   - Hall: ${firstShowtime.hall.name} (${firstShowtime.hall.type})`, 'info');
+                        log(`   - Available Seats: ${firstShowtime.availableSeats}/${firstShowtime.hall.totalSeats}`, 'info');
+
+                        // Test 4: Get seat layout
+                        log('\n4️⃣ Testing GET /api/showtimes/:id/seats', 'info');
+                        const seatsResponse = await fetch(`${API_URL}/showtimes/${firstShowtime._id}/seats`);
+                        const seatsData = await seatsResponse.json();
+                        const seats = seatsData.data || seatsData;
+                        
+                        log(`✅ Seat layout retrieved`, 'success');
+                        log(`   - Total rows: ${seats.layout.length}`, 'info');
+                        log(`   - Booked seats: ${seats.bookedSeats.length}`, 'info');
+                        log(`   - Available seats: ${seats.availableSeats}`, 'info');
+                        logJSON('Seat Layout (First Row)', seats.layout[0]);
+
+                        log('\n✅ All API tests passed!', 'success');
+                    } else {
+                        log('⚠️ No showtimes found for this movie', 'error');
+                    }
+                } else {
+                    log('❌ No movies found in database', 'error');
+                    log('💡 Run: node seed.js to populate the database', 'info');
+                }
+
+            } catch (error) {
+                log(`❌ API Test Failed: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = () => {
+            setTimeout(testAllEndpoints, 500);
+        };
+    </script>
+</body>
+</html>
