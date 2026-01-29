@@ -272,6 +272,6 @@ If you have any questions or need help, please open an issue.
 
 ---
 
-**Built with ❤️ by PrimeCine Team**
+**Built with ❤️ by PrimeCine Team: MD. Imrul Kowsar Mir**
 
 *Premium Seats. Prime Moments.*
